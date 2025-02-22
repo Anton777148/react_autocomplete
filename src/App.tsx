@@ -4,24 +4,38 @@ import './App.scss';
 import { peopleFromServer } from './data/people';
 import { Person } from './types/Person';
 
-export const App: React.FC = () => {
+interface AppProps {
+  debounceDelay?: number;
+}
+
+export const App: React.FC<AppProps> = ({ debounceDelay = 300 }) => {
   const [query, setQuery] = useState('');
   const [debounceQuery, setDebounceQuery] = useState('');
   const [selectPerson, setSelectPerson] = useState<Person | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredPeople = peopleFromServer.filter(person =>
-    person.name.toLowerCase().includes(debounceQuery.trim().toLowerCase()),
-  );
+  const getFilteredPeople = (request: string, people: Person[]) => {
+    const normalizedQuery = request.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return people;
+    }
+
+    return people.filter(person =>
+      person.name.toLowerCase().includes(normalizedQuery),
+    );
+  };
+
+  const filteredPeople = getFilteredPeople(debounceQuery, peopleFromServer);
 
   useEffect(() => {
-    const handler = debounce(() => setDebounceQuery(query), 300);
+    const handler = debounce(() => setDebounceQuery(query), debounceDelay);
 
     handler();
 
     return () => handler.cancel();
-  }, [query]);
+  }, [query, debounceDelay]);
 
   const handleSelectChange = (person: Person) => {
     setSelectPerson(person);
@@ -29,7 +43,7 @@ export const App: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleInputCange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
     setIsDropdownOpen(true);
     setSelectPerson(null);
@@ -69,7 +83,7 @@ export const App: React.FC = () => {
               className="input"
               data-cy="search-input"
               value={query}
-              onChange={handleInputCange}
+              onChange={handleInputChange}
               onFocus={() => setIsDropdownOpen(true)}
               onBlur={handleBlur}
             />
